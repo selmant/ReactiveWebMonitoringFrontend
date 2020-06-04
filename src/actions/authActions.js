@@ -1,16 +1,16 @@
 import axios from "axios";
 import setAuthHeaders from "../utils/setAuthHeaders";
-import { GET_ERRORS, SET_CURRENT_USER, USER_LOADING } from "./types";
+import { REGISTER_ERRORS,LOGIN_ERRORS, SET_CURRENT_USER, USER_LOADING } from "./types";
 
 // Register User
 export const registerUser = (userData, history) => (dispatch) => {
   axios
-    .post("/api/user/signup", userData)
+    .post("/api/user/register", userData)
     .then((res) => history.push("/login")) // re-direct to login on successful register
     .catch((err) =>
       dispatch({
-        type: GET_ERRORS,
-        payload: err.response.data,
+        type: REGISTER_ERRORS,
+        payload: err.response,
       })
     );
 };
@@ -36,8 +36,8 @@ export const loginUser = (userData) => (dispatch) => {
     })
     .catch((err) =>
       dispatch({
-        type: GET_ERRORS,
-        payload: err.response.data,
+        type: LOGIN_ERRORS,
+        payload: err.response,
       })
     );
 };
@@ -49,6 +49,7 @@ export const setCurrentUser = (decoded) => {
     payload: decoded,
   };
 };
+
 
 // User loading
 export const setUserLoading = () => {

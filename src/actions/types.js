@@ -1,3 +1,8 @@
-export const GET_ERRORS = "GET_ERRORS";
+export const LOGIN_ERRORS = "LOGIN_ERRORS";
+export const REGISTER_ERRORS = "REGISTER_ERRORS";
+
 export const USER_LOADING = "USER_LOADING";
 export const SET_CURRENT_USER = "SET_CURRENT_USER";
+
+export const SET_QUERIES = "SET_QUERIES";
+export const SET_CHANGES = "SET_CHANGES";
