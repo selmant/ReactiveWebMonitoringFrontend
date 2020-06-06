@@ -2,24 +2,55 @@ import React, { Component } from "react";
 import axios from "axios";
 import PropTypes from "prop-types";
 import { connect } from "react-redux";
-import { setQueries, setChanges } from "../../actions/pubActions";
+import {
+  setQueries,
+  setChanges,
+  setCurrentQuery,
+} from "../../actions/pubActions";
 import { loginUser } from "../../actions/authActions";
-import Observators from "./Observators";
+import Observers from "./Observers";
+import "./Queries.css";
 
 class Queries extends Component {
-  state = {
+  state = {};
+
+  urlFromArgs = (args) => {
+    
+    return "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&retmax=999999999&api_key=f3ddb4c1de06900a117c889d4cfbf0666808&term="+args;
   };
 
+  argsFromUrl = (url) => {
+    var n = url.indexOf("&term");
+    return url.substring(n + 6);
+  };
   handleSubmit = (query) => {
-    this.props.setQueries([...this.props.pub.queries, query]);
+    axios.post(`/api/pub/subscribe`, query).then((res) => {
+      this.props.setQueries([...this.props.pub.queries, query]);
+    });
   };
 
   handleDelete = (index) => {
     const newArr = [...this.props.pub.queries];
-    newArr.splice(index);
-    this.props.setQueries(newArr);
+    const deletedItem = newArr[index];
+
+    axios.post(`/api/pub/unsubscribe`, deletedItem).then((res) => {
+      newArr.splice(index, 1);
+      this.props.setQueries(newArr);
+    });
   };
 
+  handleChangeQuery = (url) => {
+    this.props.setCurrentQuery(url);
+    console.log(this.props.pub);
+  };
+  getChangeCount =(query) =>{
+    var url = this.urlFromArgs(query);
+    for (let i = 0; i < this.props.pub.changes.length; i++) {
+      const element = this.props.pub.changes[i];
+      if(element.url == url) return element.changes.length;
+    }
+    return 0;
+  }
   componentDidMount() {
     var data = {
       username: localStorage.username,
@@ -28,11 +59,7 @@ class Queries extends Component {
 
     require("axios-debug-log");
     axios.get(`/api/pub/querylist`).then((res) => {
-      const queries = res.data.map((query) => {
-        var n = query.indexOf("&term");
-        console.log(this.props.auth.user);
-        return query.substring(n + 6);
-      });
+      const queries = res.data.map((url) => this.argsFromUrl(url));
       this.props.setQueries(queries);
     });
 
@@ -45,21 +72,25 @@ class Queries extends Component {
         })
         .catch((err) => {
           console.log(err);
-          this.props.loginUser(data);
         });
     }, 10000);
   }
 
   render() {
     return (
-      <div style={{ height: "75vh" }} className="container valign-wrapper">
+      <div className="container">
         <div className="row">
-          <div className="col s12 center-align">
+          <div className="col s6 offset-s3 center-align">
             <QueryList
               queries={this.props.pub.queries}
               onDelete={this.handleDelete}
+              onQueryChange={this.handleChangeQuery}
+              getChangeCount={this.getChangeCount}
             />
             <SubmitForm onFormSubmit={this.handleSubmit} />
+          </div>
+          <div className="col s12 center-align">
+            <Observers />
           </div>
         </div>
       </div>
@@ -104,12 +135,19 @@ const Header = (props) => {
 const QueryList = (props) => {
   const queries = props.queries.map((query, index) => {
     return (
-      <Query content={query} key={index} id={index} onDelete={props.onDelete} />
+      <Query
+        content={query}
+        key={index}
+        id={index}
+        onDelete={props.onDelete}
+        onQueryChange={props.onQueryChange}
+        count={props.getChangeCount(query)}
+      />
     );
   });
   return (
     <ul class="collection with-header">
-      <Header/>
+      <Header />
       {queries}
     </ul>
   );
@@ -117,19 +155,19 @@ const QueryList = (props) => {
 
 const Query = (props) => {
   return (
-    <li class="collection-item">
-      <div className>
+    <a class="collection-item">
+      <div onClick={() => props.onQueryChange(props.content)}>
         {props.content}
-        <i
-          onClick={() => {
-            props.onDelete(props.id);
-          }}
-          class="material-icons"
-        >
-          delete
-        </i>
+        <a class="secondary-content">
+          {" "}
+          <div class="changesBox">{props.count}</div>
+        </a>
+        <a onClick={() => props.onDelete(props.id)} class="secondary-content">
+          {" "}
+          <i class="material-icons">delete</i>
+        </a>
       </div>
-    </li>
+    </a>
   );
 };
 
@@ -137,9 +175,10 @@ Queries.propTypes = {
   loginUser: PropTypes.func.isRequired,
   setQueries: PropTypes.object.isRequired,
   setChanges: PropTypes.object.isRequired,
+  setCurrentQuery: PropTypes.object.isRequired,
   auth: PropTypes.object.isRequired,
   errors: PropTypes.object.isRequired,
-  queries: PropTypes.object.isRequired,
+  pub: PropTypes.object.isRequired,
 };
 
 const mapStateToProps = (state) => ({
@@ -147,6 +186,9 @@ const mapStateToProps = (state) => ({
   errors: state.errors,
   pub: state.pub,
 });
-export default connect(mapStateToProps, { setQueries, setChanges, loginUser })(
-  Queries
-);
+export default connect(mapStateToProps, {
+  setQueries,
+  setChanges,
+  loginUser,
+  setCurrentQuery,
+})(Queries);
