@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import PropTypes from "prop-types";
 import { connect } from "react-redux";
-import { logoutUser } from "../../actions/authActions";
+import { logoutUser,loginUser } from "../../actions/authActions";
 
 class WelcomeBack extends Component {
   onLogoutClick = (e) => {
@@ -11,7 +11,7 @@ class WelcomeBack extends Component {
 
   onProceedClick = (e) =>{
     e.preventDefault();
-    window.location.href = "./queries"
+    this.props.loginUser(this.props.auth.user)
   }
 
   render() {
@@ -65,6 +65,7 @@ class WelcomeBack extends Component {
 
 WelcomeBack.propTypes = {
   logoutUser: PropTypes.func.isRequired,
+  loginUser: PropTypes.func.isRequired,
   auth: PropTypes.object.isRequired,
 };
 
@@ -72,4 +73,4 @@ const mapStateToProps = (state) => ({
   auth: state.auth,
 });
 
-export default connect(mapStateToProps, { logoutUser })(WelcomeBack);
+export default connect(mapStateToProps, { logoutUser,loginUser })(WelcomeBack);

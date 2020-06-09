@@ -44,12 +44,13 @@ class Queries extends Component {
     console.log(this.props.pub);
   };
   getChangeCount =(query) =>{
+    var count = 0;
     var url = this.urlFromArgs(query);
     for (let i = 0; i < this.props.pub.changes.length; i++) {
       const element = this.props.pub.changes[i];
-      if(element.url == url) return element.changes.length;
+      if(element.url == url) count += element.changes.length;
     }
-    return 0;
+    return count;
   }
   componentDidMount() {
     var data = {
@@ -68,7 +69,8 @@ class Queries extends Component {
       axios
         .get(`/api/pub/check`)
         .then((res) => {
-          if (res.data["changes"].length > 0) this.props.setChanges(res.data);
+          if (res.data["changes"].length > 0) 
+            this.props.setChanges(res.data.changes);
         })
         .catch((err) => {
           console.log(err);
@@ -90,7 +92,7 @@ class Queries extends Component {
             <SubmitForm onFormSubmit={this.handleSubmit} />
           </div>
           <div className="col s12 center-align">
-            <Observers />
+            {this.props.pub.current != null && <Observers />}
           </div>
         </div>
       </div>

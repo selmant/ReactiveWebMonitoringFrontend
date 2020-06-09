@@ -1,8 +1,9 @@
-import React, { Component } from "react";
+import React, { Component} from "react";
 import axios from "axios";
 import PropTypes from "prop-types";
 import { connect } from "react-redux";
 import { Link } from "react-router-dom";
+import Row from "./Row"
 import "./Observers.css";
 
 class Observers extends Component {
@@ -17,45 +18,35 @@ class Observers extends Component {
     );
   };
 
-  getJsonESummary = (id) => {
+  getJsonESummary = async (id) => {
     var instance = axios.create();
     instance.defaults.headers.common = {};
-    var obj;
-    for (var i = 0; i < this.state.JsonResponses.length; i++) {
-      if (this.state.JsonResponses[i].id == id) {
-        obj = this.state.JsonResponses[i];
-        break;
-      }
+
+    try {
+    const res = await instance
+      .get("https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pubmed.cgi/BioC_json/" + id +
+        "/ascii", { timeout: 10000 });
+    this.setState([...this.state.JsonResponses, { id: id, data: res }]);
+    return res;
     }
-    if (obj != null) return obj;
-    else {
-      require("axios-debug-log");
-      instance
-        .get(
-          "https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pubmed.cgi/BioC_json/"+id+"/ascii",{timeout:1000}
-        )
-        .then((res) => {
-          this.setState([...this.state.JsonResponses, { id: id, data: res }]);
-          return JSON.parse(res.data);
-        })
-        .catch((err) => {
-          console.log(err);
-          return null;
-        });
+    catch (err) {
+      console.log(err);
     }
+    
   };
-  componentWillUpdate()
   shouldComponentUpdate(nextProps, nextState) {
-    if (this.props.pub.current == null) return false;
+    return true;
+    if (nextState.JsonResponses.length != this.state.JsonResponses.length)
+      return true;
     if (nextProps.pub.current != this.props.pub.current) return true;
     console.log("shouldComponentUpdate " + nextProps.pub.current);
     var nextChanges, currentChanges;
-    for (var change in nextProps.pub.changes.changes) {
+    for (var change in nextProps.pub.changes) {
       if (
-        nextProps.pub.changes.changes[change].url ==
+        nextProps.pub.changes[change].url ==
         this.urlFromArgs(this.props.pub.current)
       )
-        nextChanges = nextProps.pub.changes.changes[change];
+        nextChanges = nextProps.pub.changes[change];
     }
     currentChanges = this.state.JsonResponses;
     console.log("shouldComponentUpdate " + nextChanges);
@@ -72,13 +63,15 @@ class Observers extends Component {
   }
 
   changesForCurrent() {
-    for (var change in this.props.pub.changes.changes) {
-      if (
-        this.props.pub.changes.changes[change].url ==
-        this.urlFromArgs(this.props.pub.current)
-      )
-        return this.props.pub.changes.changes[change];
+    var changes = []
+    for (var change in this.props.pub.changes) {
+      if (this.props.pub.changes[change].url == this.urlFromArgs(this.props.pub.current)){
+        console.log(this.props.pub.changes[change]);
+        changes = changes.concat(this.props.pub.changes[change].changes);
+      }
+        
     }
+    return changes;
   }
 
   render() {
@@ -87,6 +80,7 @@ class Observers extends Component {
         <table class="bordered striped responsive-table">
           <thead>
             <tr>
+              <th class="center">Index</th>
               <th class="center">ID</th>
               <th class="center">Title</th>
               <th class="center">Publish Date</th>
@@ -97,6 +91,7 @@ class Observers extends Component {
             <Changes
               getJsonESummary={this.getJsonESummary}
               changes={this.changesForCurrent()}
+              jsons={this.state.JsonResponses}
             />
           )}
         </table>
@@ -105,39 +100,13 @@ class Observers extends Component {
   }
 }
 const Changes = (props) => {
-  const changes = props.changes.changes.map((ID, index) => {
+  console.log(props);
+  const changes = props.changes.map((ID, index) => {
     return (
-      <Row getJsonESummary={props.getJsonESummary} ID={ID} index={index} />
+      <Row getJsonESummary={props.getJsonESummary} jsons={props.jsons} id={ID} index={index} />
     );
   });
   return <tbody>{changes}</tbody>;
-};
-
-const Row = (props) => {
-  var id = props.ID;
-  var obj = props.getJsonESummary(id);
-  //var authors = obj.id.authors.map((author) => author.name);
-  return (
-    <tr>
-      <td>{id}</td>
-      <td>{obj.documents.passages[0].text}</td>
-      <td>{obj.date}</td>
-      <td>
-        <a href={"https://pubmed.ncbi.nlm.nih.gov/" + id}>Click</a>
-      </td>
-    </tr>
-  );
-  /*(
-    <tr>
-      <td>{id}</td>
-      <td>{obj.id.title}</td>
-      <td>{authors.join(", ")}</td>
-      <td>{obj.id.pubdate}</td>
-      <td>
-        <Link to={"https://pubmed.ncbi.nlm.nih.gov/" + id}>Click</Link>
-      </td>
-    </tr>
-  );*/
 };
 Observers.propTypes = {
   pub: PropTypes.object.isRequired,

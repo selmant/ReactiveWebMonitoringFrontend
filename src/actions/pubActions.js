@@ -24,10 +24,10 @@ export const setCurrentQuery = (query) => (dispatch) => {
   });
 };
 
-export const setJsonResponses = (responses) = (dispatch) => {
+export const setJsonResponse = (response) => (dispatch) => {
   console.log("setJsonResponses detected.");
   dispatch({
     type: SET_JSONRESPONSES,
-    payload: responses,
+    payload: response,
   });
 };

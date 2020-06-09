@@ -7,7 +7,7 @@ import {
 
 const initialState = {
   queries: [],
-  changes: {},
+  changes: [],
   jsons: [],
 };
 
@@ -21,7 +21,7 @@ export default function (state = initialState, action) {
     case SET_CHANGES:
       return {
         ...state,
-        changes: action.payload,
+        changes: [...state.changes, ...action.payload]
       };
     case SET_CURRENT_QUERRY:
       return {
@@ -31,7 +31,7 @@ export default function (state = initialState, action) {
     case SET_JSONRESPONSES:
       return {
         ...state,
-        jsons: [...jsons, action.payload],
+        jsons: [...state.jsons, action.payload],
       };
     default:
       return state;
